@@ -3,12 +3,19 @@
 using namespace utilities; 
 #define ACCELTIME 10
 #include <Communicator.hpp>
-Communicator* com;
-/* Communicator(unsigned long period, Scheduler* aS, Scheduler* aSensors) : */
 #include "light.hpp"
-
-Light* light;
-
+void CommunicatorCallback();
+void LightCallback();
+Communicator com;
+Light light;
+Task  lightTask(TASK_MILLISECOND * 10, TASK_FOREVER, &LightCallback, &hts,false);
+/* Task CommunicatorTask(TASK_MILLISECOND*100, TASK_FOREVER, &CommunicatorCallback, &ts, false); */
+void CommunicatorCallback() {
+   com.Callback(); 
+}
+void LightCallback() {
+   light.Callback(); 
+}
 
 void setup()
 {
@@ -17,11 +24,9 @@ void setup()
     Serial.println("setup");
 
     ts.setHighPriorityScheduler(&hts);
-
-    com= new Communicator(TASK_MILLISECOND*100,&hts, &ts);
-    com->init(false);
-    com->enable();
-    light= new Light(&hts, com);
+    /* com= new Communicator(); */
+    com.init(false);
+    /* light= new Light(); */
 }
 
 void loop()

@@ -12,7 +12,7 @@
 // #define _TASK_DEBUG             // Make all methods and variables public for debug purposes
 // #define _TASK_INLINE            // Make all methods "inline" - needed to support some multi-tab, multi-file implementations
 #define _TASK_TIMEOUT           // Support for overall task timeout
-#define _TASK_OO_CALLBACKS      // Support for dynamic callback method binding
+/* #define _TASK_OO_CALLBACKS      // Support for dynamic callback method binding */
 #include <TaskScheduler.h>
 
 #include <SmartSerial.hpp>

@@ -1,6 +1,5 @@
 #ifndef _LIGHTHPP
 #define _LIGHTHPP
-#include "Tasks.hpp"
 #include <FastLED.h>
 #define FASTLED_INTERRUPT_RETRY_COUNT 0
 #define FASTLED_ALLOW_INTERRUPTS 0
@@ -25,40 +24,48 @@ TBlendType currentBlending;
 extern CRGBPalette16 myRedWhiteBluePalette;
 extern const TProgmemPalette16 myRedWhiteBluePalette_p PROGMEM;
 
-class Light : public Task {
+class Light {
 private:
     uint8_t startIndex = 0;
 
-    Scheduler* aS;
-    Scheduler* aSensors;
-    Communicator* com;
+
+    void FillLEDsFromPaletteColors(uint8_t colorIndex)
+    {
+        currentPalette = RainbowColors_p;
+        currentBlending = LINEARBLEND;
+        for (int i = 0; i < (sizeof(leds) / sizeof(leds[0])); i++) {
+          leds[i] = ColorFromPalette(currentPalette, colorIndex, brightness, currentBlending);
+        }
+        colorIndex += 4;
+        FastLED.show();
+    }
+
+unsigned int speed{0};
 
 public:
     uint8_t bright = 255;
     uint8_t brightness = BRIGHTNESS;
-    Light(Scheduler* hts, Communicator* comin)
-        : Task(TASK_MILLISECOND * 10, TASK_FOREVER, hts, false)
-    {
 
-        com = comin;
-        aS = hts;
+    Light() {
+
         // FASTLED init
         FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
         FastLED.setBrightness(BRIGHTNESS);
 
         // Start AccelerationSensor and enable Task Scheduler for this Sensor
 
-        Preseter(100 * TASK_MILLISECOND);
         currentBlending = LINEARBLEND;
-        enable();
     }
 
 
+    void SetSpeed(unsigned int new_speed) {
+      speed = new_speed;
+    }
 
     bool Callback()
     {
         Serial.println("light-callback");
-        startIndex = startIndex + com->distance;
+        startIndex = startIndex + speed;
         FillLEDsFromPaletteColors(startIndex);
         FastLED.delay(1000 / UPDATES_PER_SECOND);
         return false;

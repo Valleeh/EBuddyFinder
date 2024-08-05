@@ -2,31 +2,22 @@
 #define _COMMUNICATORHPP
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
-#include "Tasks.hpp"
 #define WIFI
 
 #define GAME_CHANNEL 13
 int rssis[3];
-const char *ZOMBIE_SSID = "zombie";
-const char *password = "thereisnospoon..."; // not important, we only scan
+const char *MY_SSID = "EBuddyFinder";
+const char *password = "whatwhat"; // not important, we only scan
 SmartSerial sCom (Serial, "Com/"," -> ");
 
 #define FAR_LIMIT     -100
-// rssi equal/higher than this means all LEDs are on
-#define NEAR_LIMIT    -40
-// game starts whenn other players are this 'far' away
-#define START_LIMIT   -90
-// infection is transmitted of rssi is equal/higher than this
-#define INFECT_LIMIT  -50
-class Communicator : public WiFiUDP, public Task
+#define NEAR_LIMIT     -20
+class Communicator : private WiFiUDP
 {
     private:
 
-        //IPAddress ServerIP(192,168,4,1);
-        //IPAddress ClientIP(192,168,4,2);
         // buffer for incoming packets
         bool acesspoint_mode_on=false;
-        // char replyPacket[30] = "Hi there! Got the message :-)"; // a reply string to send back
         char packetBuffer[9];
         unsigned int localPort = 2000; // local port to listen for UDP packets
         bool CONNECTED = false;
@@ -43,28 +34,27 @@ class Communicator : public WiFiUDP, public Task
         int size = sizeof(dataStruct); //get
         char *buffer = new char[size];
 
-        bool Callback();
 
-    public:
-        char incomingPacket[255];
-        struct dataStruct dataOut;
-        struct dataStruct dataIn;
-
-        // A UDP instance to let us send and receive packets over UDP
-        Communicator(unsigned long period, Scheduler* aS, Scheduler* aSensors);
-        /////// WIFI Defs TODO: Change Passwort when ready
-        const char *ssid = "iPhone SE (2nd generation)";
-        const char *pass = "woistmeingeld";
-
-        bool init(bool be_an_acesspoint);
+        uint8_t distance{255};
+        uint8_t CalculateDistance(uint8_t dBm, uint8_t min_dBm, uint8_t max_dBm);
         void send(dataStruct data);
         bool recieve();
         bool started();
         bool restarted();
+    public:
+        bool Callback();
+        bool init(bool be_an_acesspoint);
+        char incomingPacket[255];
+        struct dataStruct dataOut;
+        struct dataStruct dataIn;
+        const uint8_t GetDistance();
+
+        // A UDP instance to let us send and receive packets over UDP
+        Communicator();
+        const char *ssid = "iPhone SE (2nd generation)";
+        const char *pass = "woistmeingeld";
+
         int scanWifi(const char *ssid);
-        int dBm();
-        int distance=-1;
-        int GetDistance(int min_dBm, int max_dBm);
 };
 #endif
 
@@ -74,16 +64,14 @@ class Communicator : public WiFiUDP, public Task
 /* #include "Communicator.hpp" */
 
 // A UDP instance to let us send and receive packets over UDP--------------------------500*TASK_MILLISECOND
-Communicator::Communicator(unsigned long period, Scheduler* aS, Scheduler* aSensors) :
-    WiFiUDP(),
-    Task(period,TASK_FOREVER,aS,false)
-{
+Communicator::Communicator() :
+    WiFiUDP() {
     // enable();
 }
 
 bool Communicator::Callback()
 {
-    distance = GetDistance(-100,-20);
+    distance = CalculateDistance(scanWifi(MY_SSID), FAR_LIMIT, NEAR_LIMIT);
     return false;
 }
 //////////////WIFI Init
@@ -92,7 +80,7 @@ bool Communicator::init(bool be_an_acesspoint)
     WiFi.persistent(false);
     WiFi.mode(WIFI_AP_STA);
     WiFi.disconnect();
-    WiFi.softAP(ZOMBIE_SSID, password, GAME_CHANNEL, 0, 0);
+    WiFi.softAP(MY_SSID, password, GAME_CHANNEL, 0, 0);
     WiFi.disconnect();
     if (be_an_acesspoint)
     {
@@ -213,18 +201,17 @@ bool Communicator::restarted()
     }
     return false;
 }
-int Communicator::dBm()
+
+const uint8_t Communicator::GetDistance()
 {
-    return scanWifi(ZOMBIE_SSID);
-    /* return WiFi.RSSI(); */
+    return distance;
 }
 
-
-
-int Communicator::GetDistance(int min_dBm, int max_dBm)
+uint8_t Communicator::CalculateDistance(uint8_t dBm, uint8_t min_dBm, uint8_t max_dBm)
 {
-    return abs(map(dBm(), min_dBm, max_dBm, 0, 100));
+    return abs(map(dBm, min_dBm, max_dBm, 0, 100));
 }
+
 int Communicator::scanWifi(const char *ssid) {
   // scan WiFi for ssid, select strongest signal, return average over the last three scans
   int rssi = FAR_LIMIT;
