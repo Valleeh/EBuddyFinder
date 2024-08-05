@@ -23,52 +23,55 @@ TBlendType currentBlending;
 
 extern CRGBPalette16 myRedWhiteBluePalette;
 extern const TProgmemPalette16 myRedWhiteBluePalette_p PROGMEM;
+class LightInterface {
+ virtual bool Callback() = 0;
+ virtual void SetSpeed(unsigned int new_speed) = 0;
+};
 
-class Light {
+class Light : LightInterface {
 private:
-    uint8_t startIndex = 0;
+  uint8_t startIndex = 0;
+  unsigned int speed{0};
+  uint8_t bright = 255;
+  uint8_t brightness = BRIGHTNESS;
 
 
-    void FillLEDsFromPaletteColors(uint8_t colorIndex)
-    {
-        currentPalette = RainbowColors_p;
-        currentBlending = LINEARBLEND;
-        for (int i = 0; i < (sizeof(leds) / sizeof(leds[0])); i++) {
-          leds[i] = ColorFromPalette(currentPalette, colorIndex, brightness, currentBlending);
-        }
-        colorIndex += 4;
-        FastLED.show();
-    }
-
-unsigned int speed{0};
+  void FillLEDsFromPaletteColors(uint8_t colorIndex)
+  {
+      currentPalette = RainbowColors_p;
+      currentBlending = LINEARBLEND;
+      for (int i = 0; i < (sizeof(leds) / sizeof(leds[0])); i++) {
+        leds[i] = ColorFromPalette(currentPalette, colorIndex, brightness, currentBlending);
+      }
+      colorIndex += 4;
+      FastLED.show();
+  }
 
 public:
-    uint8_t bright = 255;
-    uint8_t brightness = BRIGHTNESS;
 
-    Light() {
+  Light() {
 
-        // FASTLED init
-        FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
-        FastLED.setBrightness(BRIGHTNESS);
+      // FASTLED init
+      FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+      FastLED.setBrightness(BRIGHTNESS);
 
-        // Start AccelerationSensor and enable Task Scheduler for this Sensor
+      // Start AccelerationSensor and enable Task Scheduler for this Sensor
 
-        currentBlending = LINEARBLEND;
-    }
+      currentBlending = LINEARBLEND;
+  }
 
 
-    void SetSpeed(unsigned int new_speed) {
-      speed = new_speed;
-    }
+  void SetSpeed(unsigned int new_speed) {
+    speed = new_speed;
+  }
 
-    bool Callback()
-    {
-        Serial.println("light-callback");
-        startIndex = startIndex + speed;
-        FillLEDsFromPaletteColors(startIndex);
-        FastLED.delay(1000 / UPDATES_PER_SECOND);
-        return false;
-    }
+  bool Callback()
+  {
+      Serial.println("light-callback");
+      startIndex = startIndex + speed;
+      FillLEDsFromPaletteColors(startIndex);
+      FastLED.delay(1000 / UPDATES_PER_SECOND);
+      return false;
+  }
 };
 #endif // _LIGHTSTATEHPP
