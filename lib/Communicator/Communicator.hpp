@@ -23,7 +23,7 @@ class Communicator : public ICommunicator , private WiFiUDP
     int rssis[3];
     const char *MY_SSID = "EBuddyFinder";
     const char *password = "whatwhat"; // not important, we only scan
-
+    //TODO: delete unneeded code
     // buffer for incoming packets
     bool acesspoint_mode_on=false;
     char packetBuffer[9];

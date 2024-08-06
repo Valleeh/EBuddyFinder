@@ -24,7 +24,6 @@ class App {
           }
         });
       hts.addTask(LightTask); // give task to high priority
-      LightTask.enable();
 
       CommunicatorTask.set(TASK_MILLISECOND*100, TASK_FOREVER,
         [this](){
@@ -34,7 +33,6 @@ class App {
           }
         });
       ts.addTask(CommunicatorTask);
-      CommunicatorTask.enable();
     }
   void setup()
   {
@@ -43,7 +41,11 @@ class App {
       Serial.println("setup");
 
       ts.setHighPriorityScheduler(&hts);
+
       com->init(false);
+
+      LightTask.enable();
+      CommunicatorTask.enable();
   }
 };
 App app;
