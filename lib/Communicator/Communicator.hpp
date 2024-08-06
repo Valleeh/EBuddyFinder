@@ -5,56 +5,64 @@
 #define WIFI
 
 #define GAME_CHANNEL 13
-int rssis[3];
-const char *MY_SSID = "EBuddyFinder";
-const char *password = "whatwhat"; // not important, we only scan
-SmartSerial sCom (Serial, "Com/"," -> ");
 
+SmartSerial sCom (Serial, "Com/"," -> ");
 #define FAR_LIMIT     -100
 #define NEAR_LIMIT     -20
-class Communicator : private WiFiUDP
+class ICommunicator {
+  public:
+    virtual ~ICommunicator() {}
+    virtual bool init(bool be_an_acesspoint) = 0;
+    virtual bool Callback() = 0;
+    virtual const uint8_t GetDistance() = 0;
+    virtual int scanWifi(const char *ssid) = 0;
+};
+class Communicator : public ICommunicator , private WiFiUDP
 {
-    private:
+  private:
+    int rssis[3];
+    const char *MY_SSID = "EBuddyFinder";
+    const char *password = "whatwhat"; // not important, we only scan
 
-        // buffer for incoming packets
-        bool acesspoint_mode_on=false;
-        char packetBuffer[9];
-        unsigned int localPort = 2000; // local port to listen for UDP packets
-        bool CONNECTED = false;
-        bool STARTED = false;
-        bool RESTARTED = false;
+    // buffer for incoming packets
+    bool acesspoint_mode_on=false;
+    char packetBuffer[9];
+    unsigned int localPort = 2000; // local port to listen for UDP packets
+    bool CONNECTED = false;
+    bool STARTED = false;
+    bool RESTARTED = false;
 
-        struct dataStruct {
-            int threshold;
-            bool started;
-            bool restart;
-            int brightness;
-        };
+    struct dataStruct {
+        int threshold;
+        bool started;
+        bool restart;
+        int brightness;
+    };
 
-        int size = sizeof(dataStruct); //get
-        char *buffer = new char[size];
+    int size = sizeof(dataStruct); //get
+    char *buffer = new char[size];
 
 
-        uint8_t distance{255};
-        uint8_t CalculateDistance(uint8_t dBm, uint8_t min_dBm, uint8_t max_dBm);
-        void send(dataStruct data);
-        bool recieve();
-        bool started();
-        bool restarted();
-    public:
-        bool Callback();
-        bool init(bool be_an_acesspoint);
-        char incomingPacket[255];
-        struct dataStruct dataOut;
-        struct dataStruct dataIn;
-        const uint8_t GetDistance();
+    uint8_t distance{255};
+    uint8_t CalculateDistance(uint8_t dBm, uint8_t min_dBm, uint8_t max_dBm);
+    void send(dataStruct data);
+    bool recieve();
+    bool started();
+    bool restarted();
+  public:
+    bool Callback() override ;
+    bool init(bool be_an_acesspoint) override ;
+    char incomingPacket[255];
+    struct dataStruct dataOut;
+    struct dataStruct dataIn;
+    const uint8_t GetDistance() override ;
 
-        // A UDP instance to let us send and receive packets over UDP
-        Communicator();
-        const char *ssid = "iPhone SE (2nd generation)";
-        const char *pass = "woistmeingeld";
+    // A UDP instance to let us send and receive packets over UDP
+    Communicator();
+    const char *ssid = "iPhone SE (2nd generation)";
+    const char *pass = "woistmeingeld";
 
-        int scanWifi(const char *ssid);
+    int scanWifi(const char *ssid) override ;
 };
 #endif
 
@@ -66,17 +74,14 @@ class Communicator : private WiFiUDP
 // A UDP instance to let us send and receive packets over UDP--------------------------500*TASK_MILLISECOND
 Communicator::Communicator() :
     WiFiUDP() {
-    // enable();
 }
 
-bool Communicator::Callback()
-{
+bool Communicator::Callback()  {
     distance = CalculateDistance(scanWifi(MY_SSID), FAR_LIMIT, NEAR_LIMIT);
     return false;
 }
 //////////////WIFI Init
-bool Communicator::init(bool be_an_acesspoint)
-{
+bool Communicator::init(bool be_an_acesspoint)  {
     WiFi.persistent(false);
     WiFi.mode(WIFI_AP_STA);
     WiFi.disconnect();
@@ -164,12 +169,6 @@ bool Communicator::recieve()
         }
         memset(&dataIn, 0x00, size);
         memcpy(&dataIn, &incomingPacket, size);
-
-        if(dataIn.restart)
-        {
-            RESTARTED=true;
-            Serial.println("Restart recieved");
-        }
         return true;
     }
     else
@@ -178,32 +177,7 @@ bool Communicator::recieve()
     }
 }
 
-bool Communicator::started()
-{
-    if (recieve())
-    {
-        STARTED = dataIn.started;
-    }
-    else
-    {
-        Serial.println("Nothing recieved");
-    }
-    return STARTED;
-}
-
-bool Communicator::restarted()
-{
-    recieve();
-    if (RESTARTED)
-    {
-        RESTARTED = false;
-        return true;
-    }
-    return false;
-}
-
-const uint8_t Communicator::GetDistance()
-{
+const uint8_t Communicator::GetDistance()  {
     return distance;
 }
 
@@ -212,7 +186,7 @@ uint8_t Communicator::CalculateDistance(uint8_t dBm, uint8_t min_dBm, uint8_t ma
     return abs(map(dBm, min_dBm, max_dBm, 0, 100));
 }
 
-int Communicator::scanWifi(const char *ssid) {
+int Communicator::scanWifi(const char *ssid)  {
   // scan WiFi for ssid, select strongest signal, return average over the last three scans
   int rssi = FAR_LIMIT;
   int n = WiFi.scanNetworks(false, false, GAME_CHANNEL);

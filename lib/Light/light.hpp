@@ -23,12 +23,15 @@ TBlendType currentBlending;
 
 extern CRGBPalette16 myRedWhiteBluePalette;
 extern const TProgmemPalette16 myRedWhiteBluePalette_p PROGMEM;
-class LightInterface {
- virtual bool Callback() = 0;
- virtual void SetSpeed(unsigned int new_speed) = 0;
+class ILight {
+ public:
+  
+  virtual ~ILight() {}
+  virtual bool Callback() = 0;
+  virtual void SetSpeed(unsigned int new_speed) = 0;
 };
 
-class Light : LightInterface {
+class Light : public ILight {
 private:
   uint8_t startIndex = 0;
   unsigned int speed{0};
@@ -48,8 +51,8 @@ private:
   }
 
 public:
-
-  Light() {
+  ~Light() override {}
+  Light()  {
 
       // FASTLED init
       FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
@@ -61,12 +64,11 @@ public:
   }
 
 
-  void SetSpeed(unsigned int new_speed) {
+  void SetSpeed(unsigned int new_speed) override {
     speed = new_speed;
   }
 
-  bool Callback()
-  {
+  bool Callback() override {
       Serial.println("light-callback");
       startIndex = startIndex + speed;
       FillLEDsFromPaletteColors(startIndex);
